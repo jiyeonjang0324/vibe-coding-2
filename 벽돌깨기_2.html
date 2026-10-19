@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>벽돌깨기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #0f172a;
+    color: #fff;
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #wrap {
+    display: flex; flex-direction: column; align-items: center;
+    height: 100%; padding: 10px; gap: 8px;
+  }
+  /* 상단 상태판: 프로젝터에서도 보이도록 큰 글씨 */
+  #hud {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 12px 48px;
+    font-size: clamp(24px, 3.6vw, 46px);
+    font-weight: bold;
+  }
+  #hud .label { color: #93c5fd; margin-right: 10px; }
+  #lives { color: #f87171; letter-spacing: 4px; }
+  #stage-area {
+    flex: 1; width: 100%; min-height: 0;
+    display: flex; justify-content: center; align-items: center;
+  }
+  #box { position: relative; }
+  canvas {
+    display: block; width: 100%; height: 100%;
+    background: #000; border: 4px solid #e5e7eb; border-radius: 10px;
+  }
+  /* 시작/단계 성공/게임 끝 화면 */
+  #overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    gap: 4%; text-align: center; padding: 20px;
+    background: rgba(0, 0, 0, 0.75); border-radius: 10px;
+  }
+  #overlay.hidden { display: none; }
+  #ovTitle { font-size: clamp(40px, 7vw, 90px); font-weight: 900; color: #fde047; }
+  #ovMsg { font-size: clamp(22px, 3.4vw, 42px); line-height: 1.6; }
+  button {
+    font-family: inherit;
+    font-size: clamp(28px, 4vw, 50px);
+    font-weight: bold;
+    padding: 0.35em 1.4em;
+    border: none; border-radius: 18px;
+    color: #fff; cursor: pointer;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+  #startBtn { background: #16a34a; }
+  #nextBtn  { background: #2563eb; }
+  #retryBtn { background: #dc2626; }
+  .hide { display: none; }
+  #help {
+    font-size: clamp(16px, 2.2vw, 28px);
+    color: #cbd5e1; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <div><span class="label">점수</span><span id="score">0</span></div>
+    <div><span class="label">생명</span><span id="lives"></span></div>
+    <div><span class="label">단계</span><span id="stage">1</span></div>
+    <div><span class="label">공 속도</span><span id="speed">1.0배</span></div>
+  </div>
+
+  <div id="stage-area">
+    <div id="box">
+      <canvas id="game" width="800" height="600"></canvas>
+      <div id="overlay">
+        <div id="ovTitle">벽돌깨기</div>
+        <div id="ovMsg">자를 움직여 공을 튕기고<br>모든 벽돌을 깨 보세요!</div>
+        <button id="startBtn">시작</button>
+        <button id="nextBtn" class="hide">다음 단계</button>
+        <button id="retryBtn" class="hide">다시하기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help">← → 방향키 또는 마우스·터치: 자 이동 &nbsp;|&nbsp; 스페이스: 발사 / 일시정지 &nbsp;|&nbsp; ♥ 아이템: 생명 +1</div>
+</div>
+
+<script>
+// ===================== 기본 설정 (숫자를 바꿔 난이도 조절 가능) =====================
+const W = 800, H = 600;              // 게임 화면 크기(내부 좌표)
+const PADDLE_W = 130, PADDLE_H = 18; // 자 크기
+const PADDLE_Y = H - 50;             // 자 높이 위치
+const PADDLE_SPEED = 650;            // 방향키로 움직이는 자 속도(초당 픽셀)
+const BALL_R = 10;                   // 공 반지름
+const BASE_SPEED = 330;              // 1단계 공 속도(초당 픽셀)
+const SPEED_UP = 70;                 // 단계마다 늘어나는 공 속도
+const START_LIFE = 3, MAX_LIFE = 5;  // 처음 생명, 최대 생명
+const ITEM_CHANCE = 0.12;            // 벽돌이 깨질 때 ♥ 아이템이 나올 확률
+
+// 벽돌 배치: '1' = 한 번에 깨지는 벽돌, '2' = 두 번 맞혀야 깨지는 벽돌, '.' = 빈칸
+const LAYOUTS = [
+  ["1111111111",
+   "1111111111",
+   "1111111111",
+   "1111111111"],
+  ["2222222222",
+   "1111111111",
+   "1111111111",
+   "1111111111",
+   "1111111111"],
+  ["....22....",
+   "...1111...",
+   "..111111..",
+   ".11111111.",
+   "1111111111",
+   "2222222222"],
+  ["2.2.2.2.2.",
+   ".1.1.1.1.1",
+   "2.2.2.2.2.",
+   ".1.1.1.1.1",
+   "1111111111",
+   "2222222222"],
+  ["2222222222",
+   "2111111112",
+   "2122222212",
+   "2121111212",
+   "2122222212",
+   "2111111112",
+   "2222222222"]
+];
+const LAST_STAGE = LAYOUTS.length;
+
+const COLS = 10, BRICK_W = 70, BRICK_H = 26, GAP = 6;
+const OFFSET_X = (W - (COLS * BRICK_W + (COLS - 1) * GAP)) / 2;
+const OFFSET_Y = 70;
+const ROW_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#a855f7"];
+
+// ===================== 화면 요소 =====================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const box = document.getElementById("box");
+const area = document.getElementById("stage-area");
+const overlay = document.getElementById("overlay");
+const ovTitle = document.getElementById("ovTitle");
+const ovMsg = document.getElementById("ovMsg");
+const startBtn = document.getElementById("startBtn");
+const nextBtn = document.getElementById("nextBtn");
+const retryBtn = document.getElementById("retryBtn");
+
+// ===================== 게임 상태 =====================
+// state: title(시작 전), serve(발사 대기), play(진행 중), pause(일시정지),
+//        clear(단계 성공), over(게임 끝), win(모든 단계 성공)
+let state = "title";
+let score = 0, lives = START_LIFE, stage = 1;
+const paddle = { x: (W - PADDLE_W) / 2, y: PADDLE_Y, w: PADDLE_W, h: PADDLE_H };
+const ball = { x: W / 2, y: PADDLE_Y - BALL_R - 1, vx: 0, vy: 0, r: BALL_R };
+let bricks = [], items = [], texts = [];
+const keys = { left: false, right: false };
+
+function ballSpeed() { return BASE_SPEED + (stage - 1) * SPEED_UP; }
+
+// ===================== 화면 크기 맞추기 =====================
+function resize() {
+  const s = Math.min(area.clientWidth / W, area.clientHeight / H);
+  box.style.width = (W * s) + "px";
+  box.style.height = (H * s) + "px";
+}
+window.addEventListener("resize", resize);
+
+// ===================== 단계 준비 =====================
+function buildStage() {
+  bricks = [];
+  LAYOUTS[stage - 1].forEach((row, r) => {
+    [...row].forEach((ch, c) => {
+      if (ch === ".") return;
+      bricks.push({
+        x: OFFSET_X + c * (BRICK_W + GAP),
+        y: OFFSET_Y + r * (BRICK_H + GAP),
+        w: BRICK_W, h: BRICK_H,
+        hp: Number(ch), row: r
+      });
+    });
+  });
+  items = [];
+  texts = [];
+}
+
+function readyBall() {
+  ball.x = paddle.x + paddle.w / 2;
+  ball.y = paddle.y - ball.r - 1;
+  ball.vx = 0; ball.vy = 0;
+  state = "serve";
+}
+
+function launch() {
+  const angle = (Math.random() - 0.5) * 0.8; // 살짝 비스듬히 위로
+  ball.vx = ballSpeed() * Math.sin(angle);
+  ball.vy = -ballSpeed() * Math.cos(angle);
+  state = "play";
+}
+
+function startGame() {
+  score = 0; lives = START_LIFE; stage = 1;
+  paddle.x = (W - paddle.w) / 2;
+  buildStage();
+  readyBall();
+  hideOverlay();
+}
+
+function nextStage() {
+  stage++;
+  paddle.x = (W - paddle.w) / 2;
+  buildStage();
+  readyBall();
+  hideOverlay();
+}
+
+// ===================== 안내 화면 =====================
+function showOverlay(title, msg, btn) {
+  ovTitle.textContent = title;
+  ovMsg.innerHTML = msg;
+  startBtn.classList.toggle("hide", btn !== "start");
+  nextBtn.classList.toggle("hide", btn !== "next");
+  retryBtn.classList.toggle("hide", btn !== "retry");
+  overlay.classList.remove("hidden");
+}
+function hideOverlay() { overlay.classList.add("hidden"); }
+
+function stageCleared() {
+  const bonus = 100 * stage;
+  score += bonus;
+  if (stage >= LAST_STAGE) {
+    state = "win";
+    showOverlay("축하합니다!", `모든 단계를 깼어요!<br>최종 점수: <b>${score}점</b>`, "retry");
+  } else {
+    state = "clear";
+    showOverlay(`${stage}단계 성공!`, `단계 보너스 +${bonus}점<br>다음 단계는 공이 더 빨라져요!`, "next");
+  }
+}
+
+function loseLife() {
+  lives--;
+  if (lives <= 0) {
+    state = "over";
+    showOverlay("게임 끝", `최종 점수: <b>${score}점</b><br>${stage}단계까지 도전했어요!`, "retry");
+  } else {
+    addText(W / 2, H / 2, "생명 -1", "#f87171");
+    readyBall();
+  }
+}
+
+function addText(x, y, text, color) {
+  texts.push({ x, y, text, color, t: 0 });
+}
+
+// ===================== 충돌 처리 =====================
+function circleRectHit(cx, cy, r, rect) {
+  const nx = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
+  const ny = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
+  const dx = cx - nx, dy = cy - ny;
+  return dx * dx + dy * dy < r * r;
+}
+
+function moveBall(dt) {
+  const dist = Math.hypot(ball.vx, ball.vy) * dt;
+  const steps = Math.max(1, Math.ceil(dist / 4)); // 빠른 공이 벽돌을 뚫지 않도록 잘게 나눠 이동
+  for (let i = 0; i < steps; i++) {
+    const px = ball.x, py = ball.y;
+    ball.x += ball.vx * dt / steps;
+    ball.y += ball.vy * dt / steps;
+
+    // 벽
+    if (ball.x < ball.r)      { ball.x = ball.r;      ball.vx = Math.abs(ball.vx); }
+    if (ball.x > W - ball.r)  { ball.x = W - ball.r;  ball.vx = -Math.abs(ball.vx); }
+    if (ball.y < ball.r)      { ball.y = ball.r;      ball.vy = Math.abs(ball.vy); }
+
+    // 바닥으로 떨어짐
+    if (ball.y > H + ball.r) { loseLife(); return; }
+
+    // 자 (맞은 위치에 따라 튕기는 각도가 달라짐)
+    if (ball.vy > 0 && circleRectHit(ball.x, ball.y, ball.r, paddle)) {
+      let hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+      hit = Math.max(-1, Math.min(1, hit));
+      const angle = hit * (Math.PI / 3); // 최대 60도
+      ball.vx = ballSpeed() * Math.sin(angle);
+      ball.vy = -ballSpeed() * Math.cos(angle);
+      ball.y = paddle.y - ball.r - 1;
+    }
+
+    // 벽돌
+    for (const b of bricks) {
+      if (b.hp <= 0) continue;
+      if (!circleRectHit(ball.x, ball.y, ball.r, b)) continue;
+
+      // 옆에서 맞았는지, 위/아래에서 맞았는지 판단
+      if (px + ball.r <= b.x || px - ball.r >= b.x + b.w) ball.vx = -ball.vx;
+      else ball.vy = -ball.vy;
+      ball.x = px; ball.y = py;
+
+      b.hp--;
+      if (b.hp > 0) {
+        score += 5;
+      } else {
+        const pts = 10 * stage;
+        score += pts;
+        addText(b.x + b.w / 2, b.y + b.h / 2, "+" + pts, "#fde047");
+        if (Math.random() < ITEM_CHANCE) {
+          items.push({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+        }
+      }
+      break;
+    }
+  }
+
+  if (bricks.every(b => b.hp <= 0)) stageCleared();
+}
+
+// ===================== 매 프레임 업데이트 =====================
+function update(dt) {
+  if (state === "serve" || state === "play") {
+    if (keys.left)  paddle.x -= PADDLE_SPEED * dt;
+    if (keys.right) paddle.x += PADDLE_SPEED * dt;
+    paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
+  }
+
+  if (state === "serve") {
+    ball.x = paddle.x + paddle.w / 2;
+    ball.y = paddle.y - ball.r - 1;
+  }
+
+  if (state === "play") {
+    moveBall(dt);
+
+    // ♥ 아이템 떨어지기
+    for (const it of items) {
+      it.y += 160 * dt;
+      if (it.y > paddle.y - 10 && it.y < paddle.y + paddle.h + 10 &&
+          it.x > paddle.x - 10 && it.x < paddle.x + paddle.w + 10) {
+        it.got = true;
+        if (lives < MAX_LIFE) {
+          lives++;
+          addText(it.x, paddle.y - 30, "생명 +1", "#f87171");
+        } else {
+          score += 50;
+          addText(it.x, paddle.y - 30, "보너스 +50", "#fde047");
+        }
+      }
+    }
+    items = items.filter(it => !it.got && it.y < H + 20);
+  }
+
+  if (state !== "pause") {
+    texts.forEach(t => { t.t += dt; t.y -= 40 * dt; });
+    texts = texts.filter(t => t.t < 1);
+  }
+}
+
+// ===================== 그리기 =====================
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function centerText(text, y, size, color) {
+  ctx.font = `bold ${size}px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = "#000";
+  ctx.strokeText(text, W / 2, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, W / 2, y);
+}
+
+function draw() {
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+
+  // 벽돌
+  for (const b of bricks) {
+    if (b.hp <= 0) continue;
+    ctx.fillStyle = b.hp >= 2 ? "#9ca3af" : ROW_COLORS[b.row % ROW_COLORS.length];
+    roundRect(b.x, b.y, b.w, b.h, 5);
+    ctx.fill();
+    if (b.hp >= 2) { // 단단한 벽돌 표시
+      ctx.strokeStyle = "#f3f4f6";
+      ctx.lineWidth = 3;
+      roundRect(b.x + 4, b.y + 4, b.w - 8, b.h - 8, 3);
+      ctx.stroke();
+    }
+  }
+
+  // 자
+  ctx.fillStyle = "#e5e7eb";
+  roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 9);
+  ctx.fill();
+
+  // 공
+  ctx.fillStyle = "#fde047";
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ♥ 아이템
+  ctx.font = "bold 34px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#f43f5e";
+  for (const it of items) ctx.fillText("♥", it.x, it.y);
+
+  // 떠오르는 글자
+  for (const t of texts) {
+    ctx.globalAlpha = 1 - t.t;
+    ctx.font = `bold 30px "Malgun Gothic", sans-serif`;
+    ctx.fillStyle = t.color;
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // 상태 안내
+  if (state === "serve") {
+    centerText(`${stage}단계`, H / 2 + 20, 56, "#fde047");
+    centerText("스페이스 또는 화면을 눌러 발사!", H / 2 + 90, 36, "#fff");
+  }
+  if (state === "pause") {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, W, H);
+    centerText("일시정지", H / 2 - 20, 72, "#fde047");
+    centerText("스페이스를 누르면 계속해요", H / 2 + 60, 36, "#fff");
+  }
+
+  updateHud();
+}
+
+let lastHud = "";
+function updateHud() {
+  const hud = `${score}|${lives}|${stage}`;
+  if (hud === lastHud) return;
+  lastHud = hud;
+  document.getElementById("score").textContent = score;
+  document.getElementById("lives").textContent =
+    "♥".repeat(Math.max(0, lives)) + "♡".repeat(MAX_LIFE - Math.max(0, lives));
+  document.getElementById("stage").textContent = `${stage} / ${LAST_STAGE}`;
+  document.getElementById("speed").textContent = (ballSpeed() / BASE_SPEED).toFixed(1) + "배";
+}
+
+// ===================== 게임 반복 =====================
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 1 / 30);
+  lastTime = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ===================== 입력 =====================
+function pressSpace() {
+  if (state === "serve") launch();
+  else if (state === "play") state = "pause";
+  else if (state === "pause") state = "play";
+}
+
+window.addEventListener("keydown", e => {
+  if (e.code === "ArrowLeft")  { keys.left = true;  e.preventDefault(); }
+  if (e.code === "ArrowRight") { keys.right = true; e.preventDefault(); }
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (!e.repeat) pressSpace();
+  }
+  if (e.code === "Enter" && !overlay.classList.contains("hidden")) {
+    e.preventDefault();
+    const btn = [startBtn, nextBtn, retryBtn].find(b => !b.classList.contains("hide"));
+    if (btn) btn.click();
+  }
+});
+window.addEventListener("keyup", e => {
+  if (e.code === "ArrowLeft")  keys.left = false;
+  if (e.code === "ArrowRight") keys.right = false;
+  if (e.code === "Space") e.preventDefault();
+});
+
+// 마우스·터치로 자 이동
+function movePaddleTo(clientX) {
+  if (state !== "serve" && state !== "play") return;
+  const rect = canvas.getBoundingClientRect();
+  const x = (clientX - rect.left) * (W / rect.width);
+  paddle.x = Math.max(0, Math.min(W - paddle.w, x - paddle.w / 2));
+}
+canvas.addEventListener("mousemove", e => movePaddleTo(e.clientX));
+canvas.addEventListener("click", () => { if (state === "serve") launch(); });
+canvas.addEventListener("touchstart", e => { e.preventDefault(); movePaddleTo(e.touches[0].clientX); }, { passive: false });
+canvas.addEventListener("touchmove",  e => { e.preventDefault(); movePaddleTo(e.touches[0].clientX); }, { passive: false });
+canvas.addEventListener("touchend",   e => { e.preventDefault(); if (state === "serve") launch(); }, { passive: false });
+
+// 버튼 (누른 뒤 포커스를 없애 스페이스와 겹치지 않게 함)
+startBtn.addEventListener("click", () => { startBtn.blur(); startGame(); });
+nextBtn.addEventListener("click",  () => { nextBtn.blur();  nextStage(); });
+retryBtn.addEventListener("click", () => { retryBtn.blur(); startGame(); });
+
+// 창을 벗어나면 자동 일시정지
+window.addEventListener("blur", () => { if (state === "play") state = "pause"; keys.left = keys.right = false; });
+
+// ===================== 시작 =====================
+resize();
+buildStage();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
