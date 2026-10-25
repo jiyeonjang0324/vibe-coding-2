@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>분수 덧셈 연습 🍰</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Comic Sans MS', 'Malgun Gothic', sans-serif;
+    background: linear-gradient(135deg, #FFE5B4 0%, #FFB6C1 50%, #B0E0E6 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    border-radius: 30px;
+    padding: 30px;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .title { font-size: 32px; color: #FF6B9D; font-weight: bold; }
+  .score-box {
+    background: #FFD93D;
+    padding: 12px 25px;
+    border-radius: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 4px 0 #E6B800;
+  }
+  .progress-box {
+    background: #6BCB77;
+    padding: 12px 25px;
+    border-radius: 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 4px 0 #4A9D56;
+  }
+  .question-area {
+    background: #F0F8FF;
+    border: 4px dashed #4D96FF;
+    border-radius: 25px;
+    padding: 40px 20px;
+    text-align: center;
+    margin-bottom: 25px;
+  }
+  .question {
+    font-size: 56px;
+    font-weight: bold;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 56px;
+  }
+  .fraction .num { border-bottom: 5px solid #333; padding: 0 15px; }
+  .fraction .den { padding: 0 15px; }
+  .input-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+  .input-fraction {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .input-fraction input {
+    width: 100px;
+    height: 70px;
+    font-size: 40px;
+    text-align: center;
+    border: 3px solid #4D96FF;
+    border-radius: 15px;
+    font-weight: bold;
+    color: #333;
+    background: #fff;
+  }
+  .input-fraction input:focus { outline: none; border-color: #FF6B9D; background: #FFF5F7; }
+  .input-fraction .line { width: 100px; height: 5px; background: #333; margin: 8px 0; }
+  .label { font-size: 24px; color: #666; margin-right: 10px; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    font-family: inherit;
+  }
+  .btn:active { transform: translateY(3px); }
+  .btn-submit { background: #4D96FF; color: #fff; box-shadow: 0 6px 0 #2D76DF; margin-bottom: 15px; }
+  .btn-next { background: #6BCB77; color: #fff; box-shadow: 0 6px 0 #4A9D56; margin-bottom: 15px; }
+  .btn-restart { background: #FF6B9D; color: #fff; box-shadow: 0 6px 0 #D94578; }
+  .feedback {
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    min-height: 70px;
+  }
+  .correct { background: #D4F4DD; color: #2E7D32; border: 3px solid #6BCB77; }
+  .wrong { background: #FFE0E0; color: #C62828; border: 3px solid #FF6B6B; }
+  .hint { background: #FFF9C4; color: #F57F17; border: 3px solid #FFD93D; font-size: 20px; text-align: left; line-height: 1.6; }
+  .result-screen { text-align: center; padding: 20px; }
+  .result-screen h2 { font-size: 42px; color: #FF6B9D; margin-bottom: 20px; }
+  .result-screen .final-score { font-size: 72px; color: #FFD93D; font-weight: bold; margin: 20px 0; text-shadow: 3px 3px 0 #E6B800; }
+  .result-screen .message { font-size: 26px; color: #333; margin-bottom: 30px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="quizScreen">
+    <div class="header">
+      <div class="title">🍰 분수 덧셈</div>
+      <div class="progress-box" id="progress">1 / 10</div>
+      <div class="score-box">⭐ <span id="score">0</span>점</div>
+    </div>
+
+    <div class="question-area">
+      <div class="question" id="question"></div>
+    </div>
+
+    <div class="input-area">
+      <span class="label">정답:</span>
+      <div class="input-fraction">
+        <input type="number" id="numInput" inputmode="numeric" placeholder="?">
+        <div class="line"></div>
+        <input type="number" id="denInput" inputmode="numeric" placeholder="?">
+      </div>
+    </div>
+
+    <div class="feedback hidden" id="feedback"></div>
+
+    <button class="btn btn-submit" id="submitBtn">정답 확인하기 ✏️</button>
+    <button class="btn btn-next hidden" id="nextBtn">다음 문제로 ➡️</button>
+  </div>
+
+  <div id="resultScreen" class="result-screen hidden">
+    <h2>🎉 수고했어요! 🎉</h2>
+    <div class="final-score"><span id="finalScore">0</span>점</div>
+    <div class="message" id="finalMessage"></div>
+    <button class="btn btn-restart" id="restartBtn">다시 풀기 🔄</button>
+  </div>
+</div>
+
+<script>
+  const TOTAL = 10;
+  let current = 0;
+  let score = 0;
+  let problems = [];
+  let currentAnswer = null;
+
+  // 최대공약수
+  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+
+  // 분수 덧셈 (기약분수로 반환)
+  function addFractions(a, b, c, d) {
+    const num = a * d + c * b;
+    const den = b * d;
+    const g = gcd(Math.abs(num), den);
+    return { num: num / g, den: den / g };
+  }
+
+  // 랜덤 문제 생성 (분모가 다른 경우 포함)
+  function generateProblem() {
+    const sameDen = Math.random() < 0.4;
+    let b, d;
+    if (sameDen) {
+      b = d = Math.floor(Math.random() * 7) + 3; // 3~9
+    } else {
+      b = Math.floor(Math.random() * 7) + 2; // 2~8
+      d = Math.floor(Math.random() * 7) + 2;
+      while (d === b) d = Math.floor(Math.random() * 7) + 2;
+    }
+    const a = Math.floor(Math.random() * (b - 1)) + 1;
+    const c = Math.floor(Math.random() * (d - 1)) + 1;
+    const answer = addFractions(a, b, c, d);
+    return { a, b, c, d, answer };
+  }
+
+  function createProblems() {
+    problems = [];
+    for (let i = 0; i < TOTAL; i++) problems.push(generateProblem());
+  }
+
+  function fractionHTML(n, d) {
+    return `<span class="fraction"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+  }
+
+  function showProblem() {
+    const p = problems[current];
+    currentAnswer = p.answer;
+    document.getElementById('question').innerHTML =
+      fractionHTML(p.a, p.b) + ' <span>+</span> ' + fractionHTML(p.c, p.d) + ' <span>=</span> <span>?</span>';
+    document.getElementById('progress').textContent = `${current + 1} / ${TOTAL}`;
+    document.getElementById('numInput').value = '';
+    document.getElementById('denInput').value = '';
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('submitBtn').classList.remove('hidden');
+    document.getElementById('nextBtn').classList.add('hidden');
+    document.getElementById('numInput').focus();
+  }
+
+  function makeHint(p) {
+    if (p.b === p.d) {
+      return `💡 힌트: 분모가 같을 때는 분자끼리 더하면 돼요!<br>${p.a} + ${p.c} = ${p.a + p.c}<br>분모 ${p.b}은 그대로 두세요.<br>그 다음 약분할 수 있는지 확인!`;
+    } else {
+      const lcm = (p.b * p.d) / gcd(p.b, p.d);
+      return `💡 힌트: 분모가 다르면 <b>통분</b>부터!<br>공통 분모는 ${p.b}과 ${p.d}의 최소공배수인 <b>${lcm}</b>이에요.<br>${p.a}/${p.b} = ${p.a * (lcm/p.b)}/${lcm}<br>${p.c}/${p.d} = ${p.c * (lcm/p.d)}/${lcm}<br>이제 분자끼리 더하고, 약분할 수 있으면 약분하세요!`;
+    }
+  }
+
+  function checkAnswer() {
+    const n = parseInt(document.getElementById('numInput').value);
+    const d = parseInt(document.getElementById('denInput').value);
+    const feedback = document.getElementById('feedback');
+    feedback.classList.remove('hidden', 'correct', 'wrong', 'hint');
+
+    if (isNaN(n) || isNaN(d) || d === 0) {
+      feedback.classList.add('wrong');
+      feedback.innerHTML = '❗ 분자와 분모에 숫자를 모두 입력해 주세요. (분모는 0이 될 수 없어요)';
+      return;
+    }
+
+    // 입력받은 분수를 기약분수로 변환해서 비교
+    const g = gcd(Math.abs(n), d);
+    const userNum = n / g;
+    const userDen = d / g;
+
+    if (userNum === currentAnswer.num && userDen === currentAnswer.den) {
+      score += 10;
+      document.getElementById('score').textContent = score;
+      feedback.classList.add('correct');
+      feedback.innerHTML = `🎊 정답이에요! +10점<br>정답: ${currentAnswer.num}/${currentAnswer.den}`;
+      document.getElementById('submitBtn').classList.add('hidden');
+      document.getElementById('nextBtn').classList.remove('hidden');
+    } else {
+      feedback.classList.add('hint');
+      feedback.innerHTML = '❌ 아쉬워요, 다시 생각해 봐요!<br><br>' + makeHint(problems[current]);
+    }
+  }
+
+  function nextProblem() {
+    current++;
+    if (current >= TOTAL) {
+      showResult();
+    } else {
+      showProblem();
+    }
+  }
+
+  function showResult() {
+    document.getElementById('quizScreen').classList.add('hidden');
+    document.getElementById('resultScreen').classList.remove('hidden');
+    document.getElementById('finalScore').textContent = score;
+    let msg = '';
+    if (score === 100) msg = '🏆 완벽해요! 분수 박사님!';
+    else if (score >= 80) msg = '👍 아주 잘했어요!';
+    else if (score >= 50) msg = '😊 좋아요! 조금만 더 연습해 봐요.';
+    else msg = '💪 괜찮아요! 다시 도전해 봐요!';
+    document.getElementById('finalMessage').textContent = msg;
+  }
+
+  function restart() {
+    current = 0;
+    score = 0;
+    document.getElementById('score').textContent = 0;
+    createProblems();
+    document.getElementById('resultScreen').classList.add('hidden');
+    document.getElementById('quizScreen').classList.remove('hidden');
+    showProblem();
+  }
+
+  document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+  document.getElementById('nextBtn').addEventListener('click', nextProblem);
+  document.getElementById('restartBtn').addEventListener('click', restart);
+  document.getElementById('denInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') checkAnswer();
+  });
+
+  // 시작
+  createProblems();
+  showProblem();
+</script>
+</body>
+</html>
