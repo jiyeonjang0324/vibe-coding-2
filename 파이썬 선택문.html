@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>파이썬 선택문 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky:#DDF1FF;
+    --lemon:#FFE779;
+    --ink:#2B3A55;
+    --py-blue:#3B7BD4;
+    --mint:#2FBF71;
+    --mint-bg:#E3F9EC;
+    --coral:#F0525B;
+    --coral-bg:#FFE7E8;
+    --card:#FFFFFF;
+    --code-bg:#24304A;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;
+    font-family:"Gowun Dodum",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 18%, #fff 0 38px, transparent 39px),
+      radial-gradient(circle at 88% 12%, #fff 0 26px, transparent 27px),
+      radial-gradient(circle at 80% 85%, #FFF6C7 0 60px, transparent 61px),
+      var(--sky);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px 14px;
+  }
+  .app{width:100%;max-width:620px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  header h1{font-family:"Jua",sans-serif;font-weight:400;font-size:1.7rem;margin:0;letter-spacing:-.5px}
+  header h1 span{color:var(--py-blue)}
+  header p{margin:2px 0 0;font-size:.9rem;opacity:.75}
+
+  .card{
+    background:var(--card);border-radius:28px;padding:26px 24px 24px;
+    border:3px solid var(--ink);box-shadow:0 8px 0 var(--ink);
+    position:relative;
+  }
+
+  /* 진행률 */
+  .progress-row{display:flex;justify-content:space-between;align-items:center;font-family:"Jua";margin-bottom:8px}
+  .badge{background:var(--lemon);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font-size:.95rem}
+  .score{font-size:1rem}
+  .score b{color:var(--py-blue);font-weight:400}
+  .track{height:16px;border-radius:999px;background:#EEF3FA;border:2px solid var(--ink);overflow:hidden;margin-bottom:20px}
+  .fill{height:100%;background:repeating-linear-gradient(45deg,var(--py-blue) 0 10px,#5A95E6 10px 20px);transition:width .45s cubic-bezier(.3,1.4,.6,1)}
+  .dots{display:flex;gap:6px;justify-content:center;margin:-10px 0 18px}
+  .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);background:#fff}
+  .dot.ok{background:var(--mint)} .dot.no{background:var(--coral)} .dot.now{background:var(--lemon)}
+
+  .tag{display:inline-block;font-size:.8rem;font-weight:bold;color:var(--py-blue);background:#E8F1FF;border-radius:8px;padding:3px 9px;margin-bottom:8px}
+  .question{font-family:"Jua";font-size:1.25rem;line-height:1.45;margin:0 0 12px}
+  pre.code{
+    background:var(--code-bg);color:#F2F5FF;border-radius:16px;padding:14px 16px;margin:0 0 18px;
+    font-family:"Nanum Gothic Coding",monospace;font-size:.98rem;line-height:1.6;overflow-x:auto;
+  }
+  .kw{color:#FFD866}.num{color:#AB9DF2}.str{color:#A9DC76}.fn{color:#78DCE8}.cm{color:#8792AA}
+
+  .options{display:grid;gap:10px}
+  .opt{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    font:inherit;font-size:1rem;color:var(--ink);
+    background:#fff;border:2.5px solid var(--ink);border-radius:16px;padding:12px 14px;
+    cursor:pointer;box-shadow:0 4px 0 var(--ink);transition:transform .12s, box-shadow .12s, background .2s;
+  }
+  .opt:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 0 var(--ink);background:#FFFBE3}
+  .opt:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+  .opt:focus-visible{outline:4px solid var(--py-blue);outline-offset:2px}
+  .opt .n{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:"Jua";background:var(--sky);border:2px solid var(--ink)}
+  .opt code{font-family:"Nanum Gothic Coding",monospace;font-weight:700}
+  .opt.correct{background:var(--mint-bg);border-color:var(--mint);box-shadow:0 4px 0 var(--mint);color:#17633C}
+  .opt.correct .n{background:var(--mint);border-color:var(--mint);color:#fff}
+  .opt.wrong{background:var(--coral-bg);border-color:var(--coral);box-shadow:0 4px 0 var(--coral);color:#A3242B;animation:shake .35s}
+  .opt.wrong .n{background:var(--coral);border-color:var(--coral);color:#fff}
+  .opt:disabled{cursor:default}
+  .opt.dim{opacity:.45}
+
+  .feedback{margin-top:16px;border-radius:16px;padding:12px 14px;display:none;line-height:1.55;animation:pop .3s}
+  .feedback.show{display:block}
+  .feedback.good{background:var(--mint-bg);border:2px dashed var(--mint)}
+  .feedback.bad{background:#FFF8DB;border:2px dashed #E6B800}
+  .feedback strong{font-family:"Jua";font-weight:400;font-size:1.1rem}
+  .feedback.good strong{color:var(--mint)}
+  .feedback.bad strong{color:var(--coral)}
+
+  .actions{display:flex;justify-content:flex-end;margin-top:16px;gap:10px}
+  .btn{
+    font-family:"Jua";font-size:1.1rem;border:3px solid var(--ink);border-radius:999px;padding:10px 22px;cursor:pointer;
+    background:var(--lemon);color:var(--ink);box-shadow:0 4px 0 var(--ink);transition:transform .12s, box-shadow .12s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--ink)}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+  .btn:focus-visible{outline:4px solid var(--py-blue);outline-offset:3px}
+  .btn.blue{background:var(--py-blue);color:#fff}
+  .hidden{display:none !important}
+
+  /* 마스코트 */
+  .mascot{width:64px;height:64px;flex:none}
+  .mascot.bounce{animation:bounce .6s}
+  .mascot.sad{animation:wobble .5s}
+
+  /* 결과 */
+  .result{text-align:center}
+  .result .big{font-family:"Jua";font-size:4.2rem;line-height:1;margin:6px 0;color:var(--py-blue)}
+  .result .big small{font-size:1.6rem;color:var(--ink);opacity:.6}
+  .result h2{font-family:"Jua";font-weight:400;font-size:1.6rem;margin:6px 0}
+  .result .mascot{width:110px;height:110px;margin:0 auto}
+  .summary{list-style:none;padding:0;margin:18px 0;text-align:left;display:grid;gap:8px}
+  .summary li{display:flex;gap:10px;align-items:center;border:2px solid #E3E9F3;border-radius:12px;padding:8px 12px;font-size:.95rem}
+  .summary .mark{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:"Jua"}
+  .summary .mark.ok{background:var(--mint)} .summary .mark.no{background:var(--coral)}
+  .summary .pt{margin-left:auto;font-family:"Jua";white-space:nowrap}
+
+  /* 이름 입력 */
+  .intro{text-align:center}
+  .intro h2{font-family:"Jua";font-weight:400;font-size:1.5rem;margin:4px 0 6px}
+  .intro p{margin:0 0 18px;line-height:1.6}
+  .intro .mascot{width:96px;height:96px;margin:0 auto 4px;display:block}
+  .name-form{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .name-form input{
+    flex:1 1 220px;max-width:320px;font:inherit;font-size:1.1rem;color:var(--ink);
+    border:3px solid var(--ink);border-radius:999px;padding:10px 18px;background:#fff;
+  }
+  .name-form input:focus{outline:4px solid var(--py-blue);outline-offset:2px}
+  .err{color:var(--coral);font-weight:bold;min-height:1.4em;margin:10px 0 0;font-size:.95rem}
+  .rules{list-style:none;padding:0;margin:20px 0 0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .rules li{background:var(--sky);border-radius:999px;padding:5px 12px;font-size:.88rem}
+  .who{font-family:"Jua";font-size:.95rem;opacity:.8;margin-bottom:8px}
+
+  /* 순위 파일 연결 */
+  .file-box{border:2.5px dashed var(--py-blue);border-radius:20px;padding:14px;margin:0 0 18px;background:#F4F9FF}
+  .file-status{font-family:"Jua";font-size:1.02rem;margin-bottom:10px}
+  .file-status.on{color:#17633C}
+  .file-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .btn.small{font-size:.95rem;padding:7px 14px;border-width:2.5px;box-shadow:0 3px 0 var(--ink)}
+  .file-help{font-size:.82rem;word-break:keep-all;opacity:.7;margin:10px 0 0 !important;line-height:1.5}
+  .rank-file{font-size:.85rem;text-align:left;margin:0 0 8px;padding:8px 12px;border-radius:12px;background:var(--mint-bg);color:#17633C}
+  .rank-file.warn{background:var(--coral-bg);color:#A3242B}
+  .rank-file:empty{display:none}
+
+  /* 순위표 */
+  .rank-title{font-family:"Jua";font-weight:400;font-size:1.3rem;margin:22px 0 4px;text-align:left}
+  .rank-note{font-size:.82rem;opacity:.65;text-align:left;margin:0 0 8px}
+  table.rank{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:.95rem}
+  table.rank th{font-family:"Jua";font-weight:400;opacity:.7;padding:2px 8px;text-align:left}
+  table.rank td{background:#F5F8FD;padding:9px 8px}
+  table.rank td:first-child{border-radius:12px 0 0 12px;text-align:center;font-family:"Jua";width:52px}
+  table.rank td:last-child{border-radius:0 12px 12px 0}
+  table.rank tr.me td{background:var(--lemon);font-weight:bold}
+  table.rank .r{text-align:right;white-space:nowrap}
+  .medal{font-size:1.15rem}
+  .result-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+  .btn.ghost{background:#fff}
+  .link-btn{background:none;border:none;color:var(--ink);opacity:.55;text-decoration:underline;cursor:pointer;font:inherit;font-size:.85rem;margin-top:14px}
+  .link-btn:hover{opacity:.9}
+
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}70%{transform:translateY(-4px)}}
+  @keyframes wobble{0%,100%{transform:rotate(0)}30%{transform:rotate(-10deg)}70%{transform:rotate(8deg)}}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+  @media (max-width:480px){.card{padding:20px 16px}.question{font-size:1.1rem}header h1{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <svg class="mascot" id="mascot" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M22 78 Q10 60 30 52 Q50 46 52 30 Q54 14 70 14 Q88 14 88 32 Q88 44 74 48 Q60 52 58 66 Q56 84 38 86 Q28 87 22 78Z" fill="#3B7BD4" stroke="#2B3A55" stroke-width="4"/>
+      <path d="M30 76 Q26 66 36 62" fill="none" stroke="#FFE779" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="68" cy="28" r="6" fill="#fff" stroke="#2B3A55" stroke-width="2.5"/>
+      <circle id="pupil" cx="69" cy="29" r="3" fill="#2B3A55"/>
+      <circle cx="80" cy="38" r="4" fill="#FFB3BA"/>
+      <path id="mouth" d="M70 40 Q75 44 80 40" fill="none" stroke="#2B3A55" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1><span>파이썬</span> 선택문 퀴즈</h1>
+      <p>조건식 · 단순선택문(if) · 다중선택문(if-elif-else)</p>
+    </div>
+  </header>
+
+  <section class="card intro" id="introCard">
+    <h2>퀴즈를 시작하기 전에 이름을 입력하세요</h2>
+    <p>이름은 최종 순위 목록에 표시됩니다.</p>
+
+    <div class="file-box" id="fileBox">
+      <div class="file-status" id="fileStatus">📄 순위 파일이 아직 연결되지 않았어요.</div>
+      <div class="file-btns">
+        <button type="button" class="btn small" id="openFileBtn">기존 순위 파일 열기</button>
+        <button type="button" class="btn small ghost" id="newFileBtn">새 순위 파일 만들기</button>
+      </div>
+      <p class="file-help" id="fileHelp"></p>
+      <input type="file" id="fallbackInput" accept=".txt,text/plain" hidden>
+    </div>
+
+    <form class="name-form" id="nameForm" autocomplete="off">
+      <input id="nameInput" type="text" maxlength="12" placeholder="예: 김파이" aria-label="학생 이름">
+      <button class="btn blue" type="submit">퀴즈 시작 →</button>
+    </form>
+    <p class="err" id="nameErr" aria-live="polite"></p>
+    <ul class="rules">
+      <li>총 5문제</li><li>정답 +10점</li><li>오답이면 힌트 제공</li><li>동점이면 빨리 푼 순서</li>
+    </ul>
+  </section>
+
+  <section class="card hidden" id="quizCard">
+    <div class="who" id="whoText"></div>
+    <div class="progress-row">
+      <span class="badge" id="progressText">1/5번째 문제</span>
+      <span class="score">점수 <b id="scoreText">0</b>점</span>
+    </div>
+    <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="5" id="track"><div class="fill" id="fill" style="width:0%"></div></div>
+    <div class="dots" id="dots"></div>
+
+    <span class="tag" id="tag"></span>
+    <p class="question" id="question"></p>
+    <pre class="code" id="code"></pre>
+    <div class="options" id="options"></div>
+
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="actions"><button class="btn blue hidden" id="nextBtn">다음 문제 →</button></div>
+  </section>
+
+  <section class="card result hidden" id="resultCard">
+    <svg class="mascot" id="mascotBig" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M22 78 Q10 60 30 52 Q50 46 52 30 Q54 14 70 14 Q88 14 88 32 Q88 44 74 48 Q60 52 58 66 Q56 84 38 86 Q28 87 22 78Z" fill="#3B7BD4" stroke="#2B3A55" stroke-width="4"/>
+      <path d="M30 76 Q26 66 36 62" fill="none" stroke="#FFE779" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="68" cy="28" r="6" fill="#fff" stroke="#2B3A55" stroke-width="2.5"/>
+      <circle cx="69" cy="29" r="3" fill="#2B3A55"/>
+      <circle cx="80" cy="38" r="4" fill="#FFB3BA"/>
+      <path d="M70 39 Q75 46 80 39" fill="none" stroke="#2B3A55" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <h2 id="resultTitle"></h2>
+    <div class="big"><span id="finalScore">0</span><small> / 50점</small></div>
+    <p id="resultMsg"></p>
+    <ul class="summary" id="summary"></ul>
+
+    <h3 class="rank-title">🏅 최종 순위 목록</h3>
+    <p class="rank-note">점수가 높은 순서이며, 동점이면 걸린 시간이 짧은 학생이 앞에 옵니다.</p>
+    <p class="rank-file" id="rankFileMsg"></p>
+    <table class="rank">
+      <thead><tr><th>순위</th><th>이름</th><th class="r">점수</th><th class="r">걸린 시간</th></tr></thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+
+    <div class="result-actions">
+      <button class="btn" id="retryBtn">다시 풀기 ↺</button>
+      <button class="btn ghost" id="newStudentBtn">다른 학생 시작</button>
+    </div>
+    <button class="link-btn" id="resetRankBtn">순위 목록 초기화 (선생님용)</button>
+  </section>
+</main>
+
+<script>
+const QUESTIONS = [
+  {
+    tag: "조건식",
+    q: "다음 코드를 실행했을 때 출력 결과는 무엇일까요?",
+    code: `x = <span class="num">7</span>
+<span class="fn">print</span>(x % <span class="num">2</span> == <span class="num">1</span> <span class="kw">and</span> x > <span class="num">5</span>)`,
+    options: ["<code>True</code>", "<code>False</code>", "<code>1</code>", "오류가 발생한다"],
+    answer: 0,
+    hint: "7 % 2는 7을 2로 나눈 나머지예요. 그리고 <code>and</code>는 양쪽 조건이 <b>모두 참</b>일 때만 True가 돼요.",
+    explain: "7 % 2 == 1 → True, 7 > 5 → True 이므로 True and True = <b>True</b>!"
+  },
+  {
+    tag: "단순선택문 (if)",
+    q: "score가 85일 때, 출력되는 내용은 무엇일까요?",
+    code: `score = <span class="num">85</span>
+<span class="kw">if</span> score >= <span class="num">90</span>:
+    <span class="fn">print</span>(<span class="str">"참 잘했어요"</span>)
+<span class="fn">print</span>(<span class="str">"끝"</span>)`,
+    options: ["참 잘했어요", "참 잘했어요<br>끝", "끝", "아무것도 출력되지 않는다"],
+    answer: 2,
+    hint: "들여쓰기된 줄만 if 조건에 포함돼요. 마지막 <code>print(\"끝\")</code>은 들여쓰기가 없다는 점에 주목!",
+    explain: "85 >= 90은 거짓이라 들여쓴 줄은 건너뛰고, if 밖의 <b>\"끝\"</b>만 출력돼요."
+  },
+  {
+    tag: "선택문 (if - else)",
+    q: "n이 -3일 때, 출력되는 내용은 무엇일까요?",
+    code: `n = -<span class="num">3</span>
+<span class="kw">if</span> n >= <span class="num">0</span>:
+    <span class="fn">print</span>(<span class="str">"양수 또는 0"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"음수"</span>)`,
+    options: ["양수 또는 0", "음수", "양수 또는 0<br>음수", "오류가 발생한다"],
+    answer: 1,
+    hint: "-3 >= 0 이 참인지 거짓인지 먼저 따져 보세요. 조건이 거짓이면 <code>else</code> 블록이 실행돼요.",
+    explain: "-3 >= 0은 거짓이므로 else 블록의 <b>\"음수\"</b>가 출력돼요."
+  },
+  {
+    tag: "다중선택문 (if - elif - else)",
+    q: "score가 75일 때, 출력되는 학점은 무엇일까요?",
+    code: `score = <span class="num">75</span>
+<span class="kw">if</span> score >= <span class="num">90</span>:
+    <span class="fn">print</span>(<span class="str">"A"</span>)
+<span class="kw">elif</span> score >= <span class="num">80</span>:
+    <span class="fn">print</span>(<span class="str">"B"</span>)
+<span class="kw">elif</span> score >= <span class="num">70</span>:
+    <span class="fn">print</span>(<span class="str">"C"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"D"</span>)`,
+    options: ["A", "B", "C", "D"],
+    answer: 2,
+    hint: "위에서부터 차례대로 조건을 검사해요. 75는 90 이상? 80 이상? 70 이상? 처음으로 참이 되는 곳을 찾아보세요.",
+    explain: "90 이상(거짓) → 80 이상(거짓) → 70 이상(<b>참</b>)이므로 <b>\"C\"</b>가 출력되고 검사를 멈춰요."
+  },
+  {
+    tag: "다중선택문 (조건 순서)",
+    q: "x가 95일 때, 출력되는 내용은 무엇일까요?",
+    code: `x = <span class="num">95</span>
+<span class="kw">if</span> x >= <span class="num">60</span>:
+    <span class="fn">print</span>(<span class="str">"통과"</span>)
+<span class="kw">elif</span> x >= <span class="num">90</span>:
+    <span class="fn">print</span>(<span class="str">"우수"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="str">"재도전"</span>)`,
+    options: ["우수", "통과", "통과<br>우수", "재도전"],
+    answer: 1,
+    hint: "다중선택문은 <b>처음 참이 된 조건 하나만</b> 실행하고 나머지는 건너뛰어요. 맨 위 조건부터 확인해 보세요!",
+    explain: "95 >= 60이 먼저 참이 되므로 <b>\"통과\"</b>만 출력돼요. 그래서 범위가 좁은 조건을 위에 써야 해요."
+  }
+];
+
+const $ = id => document.getElementById(id);
+let order, idx, score, triedWrong, results;
+let playerName = "", startTime = 0, myEntry = null;
+
+/* =========================================================
+   순위 텍스트 파일(ranking.txt) 관리
+   - 크롬/엣지: 파일을 한 번 연결하면 그 파일을 직접 읽고 덮어씀
+   - 그 밖의 브라우저: 파일을 불러온 뒤, 결과가 나올 때마다
+     갱신된 ranking.txt를 내려받음
+   ========================================================= */
+const FILE_NAME = "ranking.txt";
+const HEADER_LINE = "순위\t이름\t점수\t걸린시간(초)\t기록일시";
+const canUseFS = "showOpenFilePicker" in window && "showSaveFilePicker" in window;
+let fileHandle = null;      // 크롬/엣지에서 연결된 파일
+let fallbackMode = false;   // 다운로드 방식 사용 여부
+let fallbackText = null;    // 다운로드 방식에서 마지막으로 불러온/저장한 파일 내용
+const pickerOpts = { types:[{ description:"순위 텍스트 파일", accept:{ "text/plain":[".txt"] } }] };
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmtDate(t){ const d=new Date(t); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+function parseDate(s){ const m=/^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)$/.exec((s||"").trim()); return m ? new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime() : 0; }
+
+/* 텍스트 → 순위 배열 */
+function parseRankText(text){
+  const list = [];
+  (text||"").replace(/^\uFEFF/,"").split(/\r?\n/).forEach(line=>{
+    if (!line.trim() || line.startsWith("#") || line.startsWith("순위")) return;
+    const c = line.split("\t");
+    if (c.length < 4) return;
+    const score = parseInt(c[2],10), time = parseInt(c[3],10);
+    if (!c[1] || isNaN(score) || isNaN(time)) return;
+    list.push({ name:c[1].trim(), score, time, at:parseDate(c[4]) });
+  });
+  return list;
+}
+/* 순위 배열 → 텍스트 */
+function buildRankText(list){
+  const lines = ["# 파이썬 선택문 퀴즈 순위 기록 (자동 저장 파일 - 탭으로 구분)", `# 마지막 업데이트: ${fmtDate(Date.now())} · 총 ${list.length}명`, HEADER_LINE];
+  withRankNumbers(list).forEach(({r,rank})=> lines.push([rank, r.name.replace(/\t/g," "), r.score, r.time, fmtDate(r.at)].join("\t")));
+  return lines.join("\r\n") + "\r\n";
+}
+function sortRanks(list){ return list.sort((a,b)=> b.score-a.score || a.time-b.time || a.at-b.at); }
+function withRankNumbers(list){
+  let prev = 0;
+  return list.map((r,i)=>{
+    const rank = (i>0 && list[i-1].score===r.score && list[i-1].time===r.time) ? prev : i+1;
+    prev = rank; return { r, rank };
+  });
+}
+
+/* 파일 읽기/쓰기 */
+async function ensurePermission(handle){
+  const o = { mode:"readwrite" };
+  if (await handle.queryPermission(o) === "granted") return true;
+  return (await handle.requestPermission(o)) === "granted";
+}
+async function readRankFile(){
+  if (fileHandle){ const f = await fileHandle.getFile(); return await f.text(); }
+  return fallbackText || "";
+}
+async function writeRankFile(text){
+  if (fileHandle){
+    const w = await fileHandle.createWritable();
+    await w.write(text); await w.close();
+    return "saved";
+  }
+  fallbackText = text;
+  const blob = new Blob(["\uFEFF"+text], { type:"text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = FILE_NAME;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  return "downloaded";
+}
+
+/* 파일 핸들 기억(새로고침 후에도 같은 파일 사용) */
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open("pyIfQuiz",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ try{ const db=await idb(); db.transaction("kv","readwrite").objectStore("kv").put(v,k); }catch(e){} }
+async function idbGet(k){ try{ const db=await idb(); return await new Promise(res=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+
+function setFileStatus(){
+  const st = $("fileStatus");
+  if (fileHandle){
+    st.textContent = `✅ 연결된 순위 파일: ${fileHandle.name}`; st.className = "file-status on";
+    $("fileHelp").textContent = "결과가 나올 때마다 이 파일에서 순위를 불러와 비교하고, 같은 파일에 다시 저장합니다.";
+  } else if (fallbackMode){
+    st.textContent = fallbackText ? `✅ 순위 파일을 불러왔어요 (${parseRankText(fallbackText).length}명 기록)` : "✅ 새 순위 파일로 시작합니다";
+    st.className = "file-status on";
+    $("fileHelp").textContent = "이 브라우저는 파일을 직접 덮어쓸 수 없어서, 결과가 나올 때마다 갱신된 ranking.txt가 내려받기 폴더에 저장됩니다. 다음 학생은 그 파일을 다시 열어 주세요.";
+  } else {
+    st.textContent = "📄 순위 파일이 아직 연결되지 않았어요."; st.className = "file-status";
+    $("fileHelp").textContent = canUseFS
+      ? "처음이면 '새 순위 파일 만들기', 이미 있으면 '기존 순위 파일 열기'를 누르세요. (선생님이\u00a0한\u00a0번만\u00a0하면\u00a0됩니다)"
+      : "이 브라우저에서는 순위 파일을 불러오고, 결과가 나오면 갱신된 파일을 내려받는 방식으로 저장됩니다. 크롬이나 엣지를 쓰면 같은 파일에 바로 저장돼요.";
+  }
+}
+
+function useFallback(){ fallbackMode = true; fileHandle = null; }
+
+$("openFileBtn").onclick = async () => {
+  if (canUseFS && !fallbackMode){
+    try {
+      const [h] = await window.showOpenFilePicker(pickerOpts);
+      if (!(await ensurePermission(h))) throw new Error("권한 거부");
+      parseRankText(await (await h.getFile()).text()); // 읽기 확인
+      fileHandle = h; idbSet("handle", h); $("nameErr").textContent = "";
+    } catch(e){
+      if (e.name === "AbortError") return;
+      if (e.name === "SecurityError"){ useFallback(); $("fallbackInput").click(); }
+      else $("nameErr").textContent = "파일을 열지 못했어요. 다시 시도해 주세요.";
+    }
+  } else { $("fallbackInput").click(); }
+  setFileStatus();
+};
+$("fallbackInput").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  useFallback(); fallbackText = await f.text(); e.target.value = "";
+  $("nameErr").textContent = ""; setFileStatus();
+};
+$("newFileBtn").onclick = async () => {
+  if (canUseFS && !fallbackMode){
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName:FILE_NAME, ...pickerOpts });
+      fileHandle = h;
+      // 이미 내용이 있는 파일을 골랐다면 기존 기록을 지키기 위해 유지
+      const existing = parseRankText(await (await h.getFile()).text());
+      await writeRankFile(buildRankText(sortRanks(existing)));
+      idbSet("handle", h); $("nameErr").textContent = "";
+    } catch(e){
+      if (e.name === "AbortError") return;
+      if (e.name === "SecurityError"){ useFallback(); fallbackText = null; }
+      else $("nameErr").textContent = "파일을 만들지 못했어요. 다시 시도해 주세요.";
+    }
+  } else { useFallback(); fallbackText = null; $("nameErr").textContent = ""; }
+  setFileStatus();
+};
+
+function escapeHTML(s){ return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtTime(sec){ const m=Math.floor(sec/60), s=sec%60; return m ? `${m}분 ${s}초` : `${s}초`; }
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function start(){
+  order = QUESTIONS.map(q => {
+    const opts = q.options.map((t,i)=>({t, ok:i===q.answer}));
+    return {...q, opts: shuffle(opts)};
+  });
+  idx = 0; score = 0; results = [];
+  startTime = Date.now();
+  $("whoText").textContent = `🙋 ${playerName} 학생, 화이팅!`;
+  $("introCard").classList.add("hidden");
+  $("resultCard").classList.add("hidden");
+  $("quizCard").classList.remove("hidden");
+  render();
+}
+
+function renderDots(){
+  $("dots").innerHTML = order.map((_,i)=>{
+    let c = "dot";
+    if (i < results.length) c += results[i] ? " ok" : " no";
+    else if (i === idx) c += " now";
+    return `<span class="${c}"></span>`;
+  }).join("");
+}
+
+function render(){
+  const q = order[idx];
+  triedWrong = false;
+  $("progressText").textContent = `${idx+1}/${order.length}번째 문제`;
+  $("scoreText").textContent = score;
+  $("fill").style.width = (idx/order.length*100)+"%";
+  $("track").setAttribute("aria-valuenow", idx);
+  renderDots();
+  $("tag").textContent = q.tag;
+  $("question").textContent = `Q${idx+1}. ${q.q}`;
+  $("code").innerHTML = q.code;
+  $("feedback").className = "feedback";
+  $("feedback").innerHTML = "";
+  $("nextBtn").classList.add("hidden");
+  $("options").innerHTML = "";
+  q.opts.forEach((o,i)=>{
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = `<span class="n">${i+1}</span><span>${o.t}</span>`;
+    b.onclick = () => choose(b, o);
+    $("options").appendChild(b);
+  });
+  setMouth("smile");
+}
+
+function setMouth(mood){
+  const m = $("mascot");
+  $("mouth").setAttribute("d", mood==="sad" ? "M70 43 Q75 38 80 43" : "M70 40 Q75 44 80 40");
+  m.classList.remove("bounce","sad"); void m.offsetWidth;
+  if (mood==="happy") m.classList.add("bounce");
+  if (mood==="sad") m.classList.add("sad");
+}
+
+function choose(btn, o){
+  const q = order[idx];
+  const fb = $("feedback");
+  if (o.ok){
+    btn.classList.add("correct");
+    document.querySelectorAll(".opt").forEach(b=>{ b.disabled = true; if(b!==btn && !b.classList.contains("wrong")) b.classList.add("dim"); });
+    let msg;
+    if (!triedWrong){
+      score += 10;
+      msg = `<strong>⭕ 정답이에요! +10점</strong><br>${q.explain}`;
+    } else {
+      msg = `<strong>⭕ 정답이에요!</strong> (힌트를 보고 맞혀서 점수는 없어요)<br>${q.explain}`;
+    }
+    results.push(!triedWrong);
+    $("scoreText").textContent = score;
+    fb.className = "feedback good show";
+    fb.innerHTML = msg;
+    $("nextBtn").textContent = idx === order.length-1 ? "결과 보기 🎉" : "다음 문제 →";
+    $("nextBtn").classList.remove("hidden");
+    $("nextBtn").focus();
+    renderDots();
+    setMouth("happy");
+  } else {
+    btn.classList.add("wrong");
+    btn.disabled = true;
+    triedWrong = true;
+    fb.className = "feedback bad show";
+    fb.innerHTML = `<strong>❌ 아쉬워요, 오답이에요!</strong><br>💡 힌트: ${q.hint}<br><small>힌트를 보고 다시 골라 보세요.</small>`;
+    setMouth("sad");
+  }
+}
+
+function showResult(){
+  $("quizCard").classList.add("hidden");
+  $("resultCard").classList.remove("hidden");
+  $("finalScore").textContent = score;
+  const n = score/10;
+  const [title,msg] =
+    n===5 ? ["완벽해요! 선택문 마스터 🏆","조건식부터 다중선택문까지 모두 정확하게 이해했어요."] :
+    n>=3  ? ["잘했어요! 👏","틀린 문제의 해설을 다시 확인하면 금방 마스터할 수 있어요."] :
+            ["조금만 더 힘내요! 💪","조건이 참인지 거짓인지 한 줄씩 따라가며 다시 풀어 보세요."];
+  $("resultTitle").textContent = title;
+  $("resultMsg").textContent = msg;
+  $("summary").innerHTML = order.map((q,i)=>`
+    <li><span class="mark ${results[i]?'ok':'no'}">${results[i]?'O':'X'}</span>
+    <span>Q${i+1}. ${q.tag}</span><span class="pt">${results[i]?'+10점':'0점'}</span></li>`).join("");
+  $("retryBtn").focus();
+  updateRanking();
+}
+
+/* 결과가 나오면: 파일에서 목록 불러오기 → 내 기록 추가 → 비교·정렬 → 파일에 저장 → 화면 출력 */
+async function updateRanking(){
+  const elapsed = Math.max(1, Math.round((Date.now() - startTime)/1000));
+  myEntry = { name: playerName, score, time: elapsed, at: Date.now() };
+  const msg = $("rankFileMsg");
+  $("rankBody").innerHTML = `<tr><td colspan="4" style="text-align:center">순위 파일을 불러오는 중…</td></tr>`;
+  let saved = [];
+  try {
+    saved = parseRankText(await readRankFile());          // ① 저장된 텍스트 파일에서 불러오기
+  } catch(e){
+    msg.className = "rank-file warn";
+    msg.textContent = "⚠️ 순위 파일을 읽지 못했어요. 파일이 옮겨졌거나 삭제됐는지 확인해 주세요.";
+  }
+  const ranks = sortRanks([...saved, myEntry]);           // ② 내 기록과 비교해 정렬
+  renderRanks(ranks);
+  try {
+    const how = await writeRankFile(buildRankText(ranks)); // ③ 갱신된 목록을 파일에 저장
+    msg.className = "rank-file";
+    msg.textContent = how === "saved"
+      ? `💾 ${fileHandle.name} 파일에서 기존 ${saved.length}명의 기록을 불러와 비교했고, 내 기록을 추가해 저장했어요.`
+      : `💾 기존 ${saved.length}명의 기록과 비교했고, 갱신된 ${FILE_NAME} 파일을 내려받았어요. 다음 학생은 이 파일을 열어 주세요.`;
+  } catch(e){
+    msg.className = "rank-file warn";
+    msg.textContent = "⚠️ 순위 파일에 저장하지 못했어요. 파일 쓰기 권한을 확인해 주세요.";
+  }
+}
+
+function renderRanks(ranks){
+  const medals = ["🥇","🥈","🥉"];
+  let rows = [];
+  withRankNumbers(ranks).forEach(({r,rank},i)=>{
+    const isMe = r === myEntry;
+    if (i < 10 || isMe){
+      const label = rank<=3 ? `<span class="medal">${medals[rank-1]}</span>` : rank;
+      rows.push(`<tr class="${isMe?'me':''}"><td>${label}</td><td>${escapeHTML(r.name)}${isMe?' (나)':''}</td><td class="r">${r.score}점</td><td class="r">${fmtTime(r.time)}</td></tr>`);
+    }
+  });
+  if (ranks.length > 10) rows.splice(10, 0, `<tr><td colspan="4" style="text-align:center;background:none;opacity:.6">상위 10명까지 표시 · 전체 ${ranks.length}명</td></tr>`);
+  $("rankBody").innerHTML = rows.join("") || `<tr><td colspan="4" style="text-align:center">아직 기록이 없어요.</td></tr>`;
+}
+
+function showIntro(){
+  $("quizCard").classList.add("hidden");
+  $("resultCard").classList.add("hidden");
+  $("introCard").classList.remove("hidden");
+  $("nameInput").value = "";
+  $("nameErr").textContent = "";
+  $("nameInput").focus();
+}
+
+$("nameForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("nameInput").value.trim().replace(/\s+/g," ");
+  if (!fileHandle && !fallbackMode){ $("nameErr").textContent = "먼저 순위 파일을 열거나 새로 만들어 주세요."; return; }
+  if (!name){ $("nameErr").textContent = "이름을 입력해야 퀴즈를 시작할 수 있어요."; $("nameInput").focus(); return; }
+  playerName = name;
+  if (fileHandle){
+    // 새로고침 후 기억된 파일이면 사용 권한을 다시 확인
+    ensurePermission(fileHandle).then(ok=>{
+      if (ok) start();
+      else { fileHandle = null; setFileStatus(); $("nameErr").textContent = "순위 파일 사용을 허용해야 시작할 수 있어요. 파일을 다시 열어 주세요."; }
+    }).catch(()=>{ fileHandle = null; setFileStatus(); $("nameErr").textContent = "순위 파일을 다시 열어 주세요."; });
+  } else start();
+});
+$("newStudentBtn").onclick = showIntro;
+$("resetRankBtn").onclick = async () => {
+  if (confirm("순위 파일의 기록을 모두 지울까요? 되돌릴 수 없습니다.")){
+    try { await writeRankFile(buildRankText([])); } catch(e){}
+    myEntry = null; renderRanks([]);
+    $("rankFileMsg").className = "rank-file";
+    $("rankFileMsg").textContent = "🧹 순위 파일을 비웠어요.";
+  }
+};
+
+// 이전에 연결했던 순위 파일 기억해 두기(크롬/엣지)
+(async ()=>{
+  if (canUseFS){
+    const h = await idbGet("handle");
+    if (h && !fileHandle && !fallbackMode){ fileHandle = h; }
+  }
+  setFileStatus();
+})();
+
+$("nextBtn").onclick = () => {
+  idx++;
+  if (idx < order.length) render(); else { $("fill").style.width="100%"; showResult(); }
+};
+$("retryBtn").onclick = start;
+
+showIntro();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
