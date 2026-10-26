@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>학습목표 행동동사형 마스터 퀴즈</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            word-break: keep-all; /* 의미 단위 줄바꿈 최적화 */
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+
+    <!-- Header / Title Bar -->
+    <header class="w-full bg-slate-900 border-b-2 border-slate-700 py-5 px-6 md:px-12 sticky top-0 z-50 shadow-2xl">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="bg-blue-600 text-white p-3.5 rounded-2xl shadow-lg font-black text-2xl border border-blue-400">
+                    🎯
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">행동동사형 학습목표 퀴즈</h1>
+                    <p class="text-sm sm:text-base font-medium text-slate-300">교수설계 역량 심화 프로그램 (평생교육원 성인 학습자용)</p>
+                </div>
+            </div>
+            <div id="score-badge" class="hidden items-center bg-blue-950 border-2 border-blue-500 px-6 py-3 rounded-2xl text-lg font-bold shadow-xl">
+                현재 점수: <span id="header-score" class="text-blue-400 font-black ml-2 text-2xl">0점</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl mx-auto px-4 py-10 sm:py-16 flex-grow flex flex-col justify-center">
+
+        <!-- Welcome / Intro Screen -->
+        <div id="intro-screen" class="bg-slate-900 border-2 border-slate-700 rounded-3xl p-8 sm:p-14 shadow-2xl text-center space-y-8">
+            <div class="inline-flex items-center justify-center p-5 bg-blue-600/20 border-2 border-blue-500 rounded-3xl text-blue-400 text-5xl mb-2 shadow-inner">
+                📋
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black text-white leading-tight">
+                교수설계 실전 역량,<br>올바른 <span class="text-blue-400 underline decoration-blue-500 underline-offset-8">행동동사형 학습목표</span> 진술 검증
+            </h2>
+            <p class="text-lg sm:text-xl font-medium text-slate-200 max-w-2xl mx-auto leading-relaxed">
+                블룸(Bloom)의 교육목표 분류학 및 교수설계 원칙에 기반하여,<br>
+                정교하게 구성된 5가지 고난도 실전 문제입니다. 
+                <br class="hidden sm:inline">프로젝터와 태블릿 화면에서 멀리서도 또렷이 보이도록 고대비로 구현되었습니다.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 text-left my-8 bg-slate-950 p-6 sm:p-8 rounded-2xl border-2 border-slate-800 text-base sm:text-lg font-medium text-slate-200">
+                <div class="flex items-center space-x-3">
+                    <span class="text-blue-400 font-black text-xl">01</span>
+                    <span>고난도 5문항 출제</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-blue-400 font-black text-xl">02</span>
+                    <span>문항당 20점 (총 100점 만점)</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-blue-400 font-black text-xl">03</span>
+                    <span>정밀 해설 및 피드백</span>
+                </div>
+            </div>
+            <button onclick="startQuiz()" class="w-full sm:w-auto px-10 py-5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black text-xl rounded-2xl shadow-2xl shadow-blue-600/50 border-2 border-blue-400 transition-all transform hover:-translate-y-1">
+                심화 퀴즈 시작하기
+            </button>
+        </div>
+
+        <!-- Quiz Card Container -->
+        <div id="quiz-screen" class="hidden bg-slate-900 border-2 border-slate-700 rounded-3xl p-8 sm:p-12 shadow-2xl space-y-8">
+            <!-- Progress & Stats Bar -->
+            <div class="flex justify-between items-center border-b-2 border-slate-800 pb-6">
+                <div id="progress-text" class="text-blue-400 font-black text-xl sm:text-2xl">
+                    1 / 5번째 문제
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-slate-300 text-lg font-medium">획득 점수: <strong id="current-score" class="text-white text-2xl font-black">0</strong>점</span>
+                </div>
+            </div>
+            <!-- Progress Bar Line -->
+            <div class="w-full bg-slate-950 h-4 rounded-full overflow-hidden border border-slate-700">
+                <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 20%;"></div>
+            </div>
+
+            <!-- Question Text -->
+            <div class="space-y-3 pt-2">
+                <span class="inline-block bg-blue-600/30 text-blue-300 border border-blue-500 px-4 py-1.5 rounded-xl text-sm sm:text-base font-bold">심화 교수설계 문항</span>
+                <h3 id="question-text" class="text-xl sm:text-2xl md:text-3xl font-black text-white leading-relaxed">
+                    <!-- Dynamic Question -->
+                </h3>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="options-container" class="space-y-4 pt-2">
+                <!-- Dynamic Options -->
+            </div>
+
+            <!-- Feedback & Explanation Box -->
+            <div id="feedback-box" class="hidden mt-8 p-6 sm:p-8 rounded-2xl border-2 text-base sm:text-lg space-y-4 transition-all">
+                <div id="feedback-title" class="font-black text-xl sm:text-2xl flex items-center gap-3">
+                    <!-- Dynamic Feedback Header -->
+                </div>
+                <p id="feedback-desc" class="text-slate-100 leading-relaxed font-medium">
+                    <!-- Dynamic Explanation -->
+                </p>
+                <div class="pt-4 flex justify-end">
+                    <button id="next-btn" onclick="nextQuestion()" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black rounded-2xl shadow-xl border-2 border-blue-400 transition-all text-lg">
+                        다음 문제로 이동 ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden bg-slate-900 border-2 border-slate-700 rounded-3xl p-8 sm:p-14 shadow-2xl text-center space-y-8">
+            <div class="inline-flex items-center justify-center p-6 bg-blue-600/20 border-2 border-blue-500 rounded-3xl text-blue-400 text-6xl mb-2 shadow-inner">
+                🏆
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-black text-white">
+                심화 퀴즈 완료! 수고하셨습니다.
+            </h2>
+            <div class="bg-slate-950 border-2 border-slate-800 p-8 rounded-3xl max-w-lg mx-auto space-y-4">
+                <p class="text-slate-300 text-lg font-medium">최종 점수</p>
+                <div class="text-5xl sm:text-6xl font-black text-blue-400">
+                    <span id="final-score">100</span> <span class="text-3xl text-slate-300">/ 100점</span>
+                </div>
+                <p id="feedback-message" class="text-slate-100 text-base sm:text-lg font-bold pt-4 border-t-2 border-slate-800">
+                    <!-- Dynamic Feedback Message -->
+                </p>
+            </div>
+            <div class="pt-6 flex justify-center">
+                <button onclick="restartQuiz()" class="px-10 py-5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black text-xl rounded-2xl shadow-2xl shadow-blue-600/50 border-2 border-blue-400 transition-all">
+                    🔄 다시 풀기
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-8 text-slate-400 text-sm sm:text-base border-t-2 border-slate-800 mt-auto font-medium">
+        &copy; 2026 평생교육원 교수설계 연구소. All rights reserved.
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 고난도 퀴즈 데이터 정의 (블룸 교육목표 분류학 및 교수설계 원칙 반영, 각 20점 총 100점 만점)
+        const quizData = [
+            {
+                question: "학습자가 실제 보안 사고 사례를 검토한 후,<br>취약점의 원인을 다각도로 분석하여<br>대응 방안을 도출하는 역량을 기르고자 할 때,<br>가장 타당하게 진술된 <span class='text-blue-400 font-black underline'>행동동사형 학습목표</span>는?",
+                options: [
+                    "학습자는 보안 취약점의 개념을 정확히 숙지하고<br>이를 머릿속에 기억해 낼 수 있다.",
+                    "학습자는 시뮬레이션 로그를 바탕으로 오류 발생 지점을<br>3가지 이상 구체적으로 분류할 수 있다.",
+                    "학습자는 정보보안 대책에 대해<br>전반적이고 폭넓은 소양을 함양한다.",
+                    "학습자는 보안 사고 분석 과정에 대해<br>깊이 있는 통찰력과 안목을 갖추게 된다."
+                ],
+                answer: 1,
+                explanation: "정답입니다! '숙지하고 기억한다', '소양을 함양한다', '통찰력을 갖춘다'는 내면적 상태를 나타내어 관찰과 측정이 불가합니다. 반면 '분류할 수 있다'는 분석 수준의 명확한 행동동사형 목표 진술입니다."
+            },
+            {
+                question: "성인 학습자를 위한 평생교육 프로그램 개발 워크숍에서,<br>단순 수강을 넘어 실질적인 산출물을 만들어내는<br>인지적 상위 수준(<span class='text-blue-400 font-black'>종합/창의</span>)의 진술로 가장 적절한 것은?",
+                options: [
+                    "학습자는 평생교육 프로그램 기획서의 구조를 이해하고<br>필요시 서식을 바르게 나열할 수 있다.",
+                    "학습자는 요구조사 결과를 토대로<br>신규 평생교육 프로그램 운영 계획안을<br>직접 설계하여 작성할 수 있다.",
+                    "학습자는 우수한 평생교육 프로그램 사례를 보고<br>그 장단점을 자유롭게 감상할 수 있다.",
+                    "학습자는 평생교육 관련 법규와 행정 절차를<br>오류 없이 꼼꼼히 암기할 수 있다."
+                ],
+                answer: 1,
+                explanation: "정답입니다! '설계하여 작성할 수 있다'는 블룸 분류학의 최상위 수준인 종합 및 창의 영역을 대변하며, 객관적 산출물로 명확히 측정할 수 있는 대표적 행동동사 진술입니다."
+            },
+            {
+                question: "학습목표 진술 시 흔히 범하는 오류 중 하나로,<br>‘학습자의 행동 변화’ 대신<br><span class='text-red-400 font-black'>‘교수자의 교수 활동’</span>을 기술하는 경우가 있습니다.<br>올바른 학습자 중심 행동동사형으로 고쳐진 것은?",
+                options: [
+                    "교수자는 성인 학습자의 주요 동기 유발 요인을<br>파워포인트 자료를 통해 상세히 강의한다.",
+                    "교수자는 e-러닝 콘텐츠 제작 시연 과정을<br>학습자 앞에서 직접 보여줄 수 있다.",
+                    "학습자는 성인 학습자의 참여 동기 저하 원인을<br>사례별로 분석하여 구체적 대안을 제시할 수 있다.",
+                    "교수자는 학습자들 간의 소그룹 토론 활동을<br>중간에 개입하여 적극적으로 중재한다."
+                ],
+                answer: 2,
+                explanation: "정답입니다! 학습목표는 '교수자가 무엇을 가르칠 것인가'가 아니라 '학습자가 교육 후 무엇을 할 수 있는가'를 기준으로 해야 하므로, 학습자의 구체적 행동(대안을 제시할 수 있다)을 기술한 3번이 정답입니다."
+            },
+            {
+                question: "정의적 영역 및 실습 교과의 성취도를 평가할 때,<br>외부에서 관찰하기 모호한 내면적 심리 상태를 배제하고,<br>관찰 가능한 행동 지표를 담은 <span class='text-blue-400 font-black underline'>올바른 행동동사형 목표</span>는?",
+                options: [
+                    "학습자는 협업 프로젝트 수행 과정에서<br>조원들의 의견에 진심으로 공감한다.",
+                    "학습자는 실습실 내 안전 수칙을 준수하며<br>주어진 장비를 매뉴얼에 따라 안전하게 조작한다.",
+                    "학습자는 평생교육의 공공적 가치에 대해<br>마음속 깊이 감동하고 자긍심을 느낀다.",
+                    "학습자는 새로운 교수법 이론을 접할 때마다<br>깊이 있는 고뇌와 성찰을 하게 된다."
+                ],
+                answer: 1,
+                explanation: "정답입니다! '공감한다', '감동한다', '성찰한다'는 주관적 내면 상태로 객관적 측정이 어렵습니다. 반면 '조작한다'는 행동 지표를 통해 직접 관찰 및 평가가 가능합니다."
+            },
+            {
+                question: "학습목표의 완벽한 요건인 '행동동사'뿐만 아니라,<br><span class='text-blue-400 font-black'>'조건(Condition)'과 '기준(Criteria)'</span>이<br>가장 이상적으로 모두 포함된 행동동사형 목표는?",
+                options: [
+                    "학습자는 주어진 통계 프로그램 활용 지침에 따라,<br>설문조사 데이터의 빈도분석을<br>15분 이내에 오류 없이 완료하여 제출할 수 있다.",
+                    "학습자는 통계 분석 관련 프로그램을 능숙하게 다룰 수 있다.",
+                    "학습자는 설문조사 데이터를 보고 대충 분석할 수 있다.",
+                    "학습자는 통계학의 학술적 발전 과정을<br>막힘없이 줄줄이 읊을 수 있다."
+                ],
+                answer: 0,
+                explanation: "정답입니다! '주어진 활용 지침에 따라(조건)', '15분 이내에 오류 없이(기준)', '제출할 수 있다(행동동사)'를 모두 충족하는 가장 완성도 높은 교수설계 목표 진술입니다."
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        const introScreen = document.getElementById('intro-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const currentScoreEl = document.getElementById('current-score');
+        const headerScoreEl = document.getElementById('header-score');
+        const scoreBadge = document.getElementById('score-badge');
+        const feedbackBox = document.getElementById('feedback-box');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackDesc = document.getElementById('feedback-desc');
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            introScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            scoreBadge.classList.remove('hidden');
+            scoreBadge.classList.add('flex');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            feedbackBox.classList.add('hidden');
+            
+            const q = quizData[currentQuestionIndex];
+            questionText.innerHTML = q.question;
+            progressText.innerText = `${currentQuestionIndex + 1} / ${quizData.length}번째 문제`;
+            progressBar.style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+            currentScoreEl.innerText = score;
+            headerScoreEl.innerText = score + '점';
+
+            optionsContainer.innerHTML = '';
+            q.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                // 모든 보기가 클릭 전에는 완전히 동일한 고대비 디자인 (스포일러 방지)
+                btn.className = "w-full text-left p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-slate-700 hover:border-blue-500 hover:bg-slate-900 text-white font-bold text-lg sm:text-xl transition-all shadow-xl flex items-center group cursor-pointer";
+                btn.innerHTML = `
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-blue-400 font-black text-lg mr-5 group-hover:bg-blue-600 group-hover:text-white transition-colors flex-shrink-0 border border-slate-700">${index + 1}</span>
+                    <span class="leading-relaxed">${option}</span>
+                `;
+                btn.onclick = () => selectAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedIndex, selectedBtn) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const q = quizData[currentQuestionIndex];
+            const allBtns = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons after choice
+            allBtns.forEach(b => b.disabled = true);
+
+            if (selectedIndex === q.answer) {
+                // Correct - 선명한 파란색 계열 고대비 강조 (+20점)
+                score += 20;
+                currentScoreEl.innerText = score;
+                headerScoreEl.innerText = score + '점';
+                
+                selectedBtn.className = "w-full text-left p-5 sm:p-6 rounded-2xl bg-blue-950 border-4 border-blue-500 text-white font-bold text-lg sm:text-xl shadow-2xl flex items-center transition-all";
+                
+                feedbackBox.className = "mt-8 p-6 sm:p-8 rounded-2xl border-2 bg-blue-950 border-blue-500 text-base sm:text-lg space-y-4 transition-all shadow-2xl";
+                feedbackTitle.innerHTML = `<span class="text-blue-400 text-2xl font-black">🔵</span> <span class="text-blue-300 font-black text-2xl">정답입니다! (+20점)</span>`;
+            } else {
+                // Incorrect - 선명한 빨간색 계열 고대비 강조
+                selectedBtn.className = "w-full text-left p-5 sm:p-6 rounded-2xl bg-red-950 border-4 border-red-600 text-white font-bold text-lg sm:text-xl shadow-2xl flex items-center transition-all";
+                
+                // Highlight actual correct answer in blue for contrast
+                allBtns[q.answer].className = "w-full text-left p-5 sm:p-6 rounded-2xl bg-blue-950 border-4 border-blue-500 text-white font-bold text-lg sm:text-xl shadow-2xl flex items-center transition-all";
+
+                feedbackBox.className = "mt-8 p-6 sm:p-8 rounded-2xl border-2 bg-red-950 border-red-600 text-base sm:text-lg space-y-4 transition-all shadow-2xl";
+                feedbackTitle.innerHTML = `<span class="text-red-400 text-2xl font-black">🔴</span> <span class="text-red-300 font-black text-2xl">오답입니다. 보충 힌트 및 해설을 확인하세요!</span>`;
+            }
+
+            feedbackDesc.innerHTML = `<strong>해설:</strong> ${q.explanation}`;
+            feedbackBox.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            scoreBadge.classList.add('hidden');
+            
+            document.getElementById('final-score').innerText = score;
+            const feedbackMsg = document.getElementById('feedback-message');
+
+            if (score === 100) {
+                feedbackMsg.innerHTML = "🌟 <strong>만점입니다!</strong> 탁월한 교수설계 역량을 갖추셨습니다. 행동동사형 목표 진술의 전문가 수준이십니다.";
+            } else if (score >= 60) {
+                feedbackMsg.innerHTML = "👍 <strong>좋은 성적입니다!</strong> 교수설계 핵심 개념을 잘 이해하고 계십니다. 조건과 기준이 포함된 정교한 행동동사 진술을 조금만 더 다듬어보세요.";
+            } else {
+                feedbackMsg.innerHTML = "💡 <strong>수고하셨습니다!</strong> 블룸의 교육목표 분류학 및 관찰/측정 가능한 행동동사 작성법(조건-기준-행동)을 다시 한번 복습해 보세요.";
+            }
+        }
+
+        function restartQuiz() {
+            resultScreen.classList.add('hidden');
+            introScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
